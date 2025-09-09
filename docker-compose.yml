@@ -1,0 +1,20 @@
+version: "3"
+
+services:
+  blog-service:
+    build: ./blog-service
+    ports:
+      - "4001:4001"
+
+  comment-service:
+    build: ./comment-service
+    ports:
+      - "4002:4002"
+
+  api-gateway:
+    build: ./nginx
+    ports:
+      - "80:80"
+    depends_on:
+      - blog-service
+      - comment-service
