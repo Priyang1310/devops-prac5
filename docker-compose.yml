@@ -1,20 +1,49 @@
-version: "3"
-
+version: "3.8"
 services:
-  blog-service:
-    build: ./blog-service
+  kong:
+    image: kong:3.3
+    container_name: kong
+    ports:
+      - "8000:8000"
+      - "8001:8001"
+    volumes:
+      - ./kong.yml:/usr/local/kong/declarative/kong.yml
+    environment:
+      - KONG_DATABASE=off
+      - KONG_DECLARATIVE_CONFIG=/usr/local/kong/declarative/kong.yml
+      - KONG_PROXY_ACCESS_LOG=/dev/stdout
+      - KONG_ADMIN_ACCESS_LOG=/dev/stdout
+      - KONG_PROXY_ERROR_LOG=/dev/stderr
+      - KONG_ADMIN_ERROR_LOG=/dev/stderr
+
+  redis:
+    image: redis:6
+    container_name: redis
+
+  author-service:
+    build: ./author-service
+    container_name: author-service
     ports:
       - "4001:4001"
 
-  comment-service:
-    build: ./comment-service
+  article-service:
+    build: ./article-service
+    container_name: article-service
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - AUTHOR_SERVICE=http://author-service:4001
     ports:
       - "4002:4002"
-
-  api-gateway:
-    build: ./nginx
-    ports:
-      - "80:80"
     depends_on:
-      - blog-service
-      - comment-service
+      - author-service
+      - redis
+
+  comment-service:
+    build: ./comment-service
+    container_name: comment-service
+    environment:
+      - REDIS_URL=redis://redis:6379
+    ports:
+      - "4003:4003"
+    depends_on:
+      - redis

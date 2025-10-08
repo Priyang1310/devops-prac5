@@ -1,14 +1,19 @@
 const express = require("express");
+const Queue = require("bull");
+
 const app = express();
-const PORT = 4002;
+app.use(express.json());
 
-app.get("/comments", (req, res) => {
-  res.json([
-    { id: 1, blogId: 1, text: "Very helpful!" },
-    { id: 2, blogId: 2, text: "Nice explanation" }
-  ]);
+const REDIS_URL = process.env.REDIS_URL || "redis://redis:6379";
+const commentQueue = new Queue("comments", REDIS_URL);
+
+let comments = [];
+
+commentQueue.process(async (job) => {
+  console.log("Processing comment notification:", job.data);
+  comments.push({ articleId: job.data.articleId, msg: "Notify via email " + job.data.authorEmail });
 });
 
-app.listen(PORT, () => {
-  console.log(`Comment Service running on port ${PORT}`);
-});
+app.get("/comments", (req, res) => res.json(comments));
+
+app.listen(4003, () => console.log("Comment Service running on 4003"));
