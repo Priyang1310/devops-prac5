@@ -1,0 +1,24 @@
+name: Trigger Jenkins Job
+
+on:
+  push:
+    branches:
+      - main  # or any branch you want to trigger
+
+jobs:
+  trigger-jenkins:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Jenkins Job
+        env:
+          JENKINS_URL: ${{ secrets.JENKINS_URL }}
+          JENKINS_USER: ${{ secrets.JENKINS_USER }}
+          JENKINS_TOKEN: ${{ secrets.JENKINS_TOKEN }}
+        run: |
+          # Optional: get CSRF crumb if Jenkins has security enabled
+          CRUMB=$(curl -s -u "$JENKINS_USER:$JENKINS_TOKEN" "$JENKINS_URL/crumbIssuer/api/json" | jq -r '.crumb')
+          
+          # Trigger the job
+          curl -X POST "$JENKINS_URL/job/my-demo-job/build" \
+               -u "$JENKINS_USER:$JENKINS_TOKEN" \
+               -H "Jenkins-Crumb:$CRUMB"
